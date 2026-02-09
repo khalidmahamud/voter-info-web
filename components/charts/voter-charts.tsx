@@ -28,16 +28,9 @@ const COLORS = {
 }
 
 export function VoterCharts({ stats }: VoterChartsProps) {
-  if (!stats) return null
-
-  // Gender distribution data
-  const genderData = [
-    { name: 'পুরুষ (Male)', value: stats.male, color: COLORS.male },
-    { name: 'মহিলা (Female)', value: stats.female, color: COLORS.female },
-  ]
-
   // Top 10 occupations data
   const occupationData = useMemo(() => {
+    if (!stats) return []
     const sortedOccupations = Object.entries(stats.occupationCounts)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
@@ -47,7 +40,15 @@ export function VoterCharts({ stats }: VoterChartsProps) {
         fill: COLORS.occupation[index % COLORS.occupation.length],
       }))
     return sortedOccupations
-  }, [stats.occupationCounts])
+  }, [stats])
+
+  if (!stats) return null
+
+  // Gender distribution data
+  const genderData = [
+    { name: 'পুরুষ (Male)', value: stats.male, color: COLORS.male },
+    { name: 'মহিলা (Female)', value: stats.female, color: COLORS.female },
+  ]
 
   // Age distribution data (if available)
   const ageData = stats.ageDistribution || []
