@@ -1,6 +1,10 @@
 import { Users } from 'lucide-react'
 
-export function Header() {
+interface HeaderProps {
+  wardName?: string
+}
+
+export function Header({ wardName }: HeaderProps) {
   return (
     <header className="border-b-2 bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-3 py-3 md:px-4 md:py-4">
@@ -16,6 +20,9 @@ export function Header() {
             </div>
           </div>
           <div className="flex flex-col items-end flex-shrink-0">
+            {wardName && (
+              <p className="text-[9px] sm:text-[10px] md:text-sm text-blue-600 md:font-semibold leading-tight">{wardName}</p>
+            )}
             <p className="text-[9px] sm:text-[10px] md:text-sm text-gray-600 md:font-medium leading-tight">ধর্মপুর, সীতাকুন্ড</p>
             <p className="text-[8px] sm:text-[9px] md:text-xs text-gray-500 leading-tight">চট্টগ্রাম, বাংলাদেশ</p>
           </div>

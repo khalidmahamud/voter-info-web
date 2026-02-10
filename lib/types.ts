@@ -97,6 +97,29 @@ export interface VoterStats {
 }
 
 /**
+ * Ward metadata
+ */
+export interface WardInfo {
+  wardNo: number
+  wardName: string
+}
+
+/**
+ * A single ward's voter data (extends VoterData with ward metadata)
+ */
+export interface WardVoterData extends VoterData {
+  wardNo: number
+  wardName: string
+}
+
+/**
+ * Root data structure containing all wards
+ */
+export interface AllWardsData {
+  wards: WardVoterData[]
+}
+
+/**
  * Export options
  */
 export type ExportFormat = 'csv' | 'json'

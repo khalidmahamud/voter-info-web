@@ -2,14 +2,18 @@
 
 import { Header } from '@/components/layout/header'
 import { VoterCharts } from '@/components/charts/voter-charts'
-import { useVoterData } from '@/hooks/use-voter-data'
+import { useWardData } from '@/hooks/use-voter-data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
-export default function StatsPage() {
-  const { stats, loading, error } = useVoterData()
+interface WardStatsPageProps {
+  wardNo: number
+}
+
+export function WardStatsPage({ wardNo }: WardStatsPageProps) {
+  const { stats, wardName, loading, error } = useWardData(wardNo)
 
   // Loading state
   if (loading) {
@@ -63,12 +67,12 @@ export default function StatsPage() {
   // Success state
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <Header />
+      <Header wardName={wardName ?? undefined} />
 
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Back Button and Title */}
         <div className="flex items-center gap-4">
-          <Link href="/">
+          <Link href={`/ward/${wardNo}`}>
             <Button variant="outline" size="sm" className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -78,7 +82,9 @@ export default function StatsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               পরিসংখ্যান ও বিশ্লেষণ
             </h1>
-            <p className="text-sm text-gray-600">Statistics & Analysis</p>
+            <p className="text-sm text-gray-600">
+              {wardName ? `${wardName} • ` : ''}Statistics & Analysis
+            </p>
           </div>
         </div>
 

@@ -1,10 +1,10 @@
-import type { VoterData, VoterRecord, VoterStats } from './types'
+import type { VoterData, VoterRecord, VoterStats, AllWardsData, WardVoterData, WardInfo } from './types'
 import { bengaliToArabic } from './utils'
 
 /**
- * Load voter data from public JSON file
+ * Load all wards data from public JSON file
  */
-export async function loadVoterData(): Promise<VoterData> {
+export async function loadAllWardsData(): Promise<AllWardsData> {
   try {
     const response = await fetch('/voter_data.json')
     if (!response.ok) {
@@ -12,12 +12,8 @@ export async function loadVoterData(): Promise<VoterData> {
     }
     const data = await response.json()
 
-    // Data structure is an array with one object containing female and male arrays
-    if (Array.isArray(data) && data.length > 0 && data[0]) {
-      return {
-        female: data[0].female || [],
-        male: data[0].male || [],
-      }
+    if (data && Array.isArray(data.wards) && data.wards.length > 0) {
+      return data as AllWardsData
     }
 
     throw new Error('Invalid data format')
@@ -25,6 +21,24 @@ export async function loadVoterData(): Promise<VoterData> {
     console.error('Error loading voter data:', error)
     throw error
   }
+}
+
+/**
+ * Get a specific ward's data by ward number
+ */
+export function getWardData(allData: AllWardsData, wardNo: number): WardVoterData | null {
+  return allData.wards.find(w => w.wardNo === wardNo) ?? null
+}
+
+/**
+ * Get list of ward metadata for selection page
+ */
+export function getWardList(allData: AllWardsData): (WardInfo & { totalVoters: number })[] {
+  return allData.wards.map(w => ({
+    wardNo: w.wardNo,
+    wardName: w.wardName,
+    totalVoters: w.female.length + w.male.length,
+  }))
 }
 
 /**
