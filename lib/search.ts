@@ -40,11 +40,23 @@ export function createSearchIndex(records: VoterRecord[]): Fuse<VoterRecord> {
 }
 
 /**
- * Perform a comprehensive multi-pass search on voter records.
- * Pass 1: Full query (highest relevance — exact/close matches)
- * Pass 2: Individual word tokens, ranked by how many tokens each voter matches.
- *         e.g. "খুরশেদ আলম" (2 token hits) ranks above "মোঃ" only (1 token hit).
- * Results are deduplicated, with full-query matches always ranked first.
+ * Unified IDF-weighted search.
+ *
+ * Each query token is searched independently. Every voter gets a composite
+ * score = Σ (tokenSpecificity × matchQuality) across all matching tokens.
+ *
+ * - tokenSpecificity = 1/√(total results for that token)
+ *   Rare tokens like "খুরশেদ" (~10 hits) weigh ~10× more than "মোঃ" (~1200 hits).
+ *
+ * - matchQuality = 1 − fuseScore
+ *   Fuse.js field weights (name=5 > father=2 > address=0.5) produce lower
+ *   scores for name-field matches, so name matches naturally score highest.
+ *
+ * This means "খোরশেদ আলম" (name match on 2 rare tokens) ranks above
+ * "মোঃ রিদোয়ান হোসেন" (father_name match) even though the latter
+ * matches more tokens (including the common "মোঃ").
+ *
+ * A dynamic cutoff (20% of best score) eliminates noise-only matches.
  */
 export function searchVoters(
   fuse: Fuse<VoterRecord>,
@@ -55,45 +67,60 @@ export function searchVoters(
   }
 
   const normalizedQuery = normalizeVoterNumber(query.trim())
-
-  // Pass 1: search with the full query
-  const fullResults = fuse.search(normalizedQuery)
-  const fullResultIds = new Set<string>(fullResults.map(r => r.item.voter_no))
-
-  // Pass 2: split into tokens, search each, and score by token hit count
   const tokens = normalizedQuery
     .split(/\s+/)
     .filter(t => t.length >= 2)
 
-  if (tokens.length <= 1) {
-    // Single token — full results already cover everything
-    return fullResults
+  if (tokens.length === 0) return []
+
+  // Single token: direct Fuse search is sufficient
+  if (tokens.length === 1) {
+    return fuse.search(tokens[0])
   }
 
-  // Track how many tokens each voter matched + best Fuse score
-  const tokenHits = new Map<string, { result: FuseResult<VoterRecord>; hitCount: number; bestScore: number }>()
+  // Multi-token: unified IDF-weighted scoring
+  const tokenData = tokens.map(token => {
+    const results = fuse.search(token)
+    return { results, total: results.length }
+  })
 
-  for (const token of tokens) {
-    for (const r of fuse.search(token)) {
+  // Tighter quality gate per token — rejects loose fuzzy matches
+  // like "আবুল" ≈ "আলম" that slip through the global 0.4 threshold
+  const TOKEN_QUALITY_CUTOFF = 0.3
+
+  const voterScores = new Map<string, { result: FuseResult<VoterRecord>; score: number }>()
+
+  for (const { results, total } of tokenData) {
+    const specificity = total > 0 ? 1 / Math.sqrt(total) : 0
+
+    for (const r of results) {
+      if ((r.score ?? 1) > TOKEN_QUALITY_CUTOFF) continue
+
       const id = r.item.voter_no
-      if (fullResultIds.has(id)) continue // already in pass 1 results
+      const matchQuality = 1 - (r.score ?? 1)
+      const contribution = specificity * matchQuality
 
-      const existing = tokenHits.get(id)
+      const existing = voterScores.get(id)
       if (existing) {
-        existing.hitCount++
-        existing.bestScore = Math.min(existing.bestScore, r.score ?? 1)
+        existing.score += contribution
+        // Keep the result with the best Fuse score for display purposes
+        if ((r.score ?? 1) < (existing.result.score ?? 1)) {
+          existing.result = r
+        }
       } else {
-        tokenHits.set(id, { result: r, hitCount: 1, bestScore: r.score ?? 1 })
+        voterScores.set(id, { result: r, score: contribution })
       }
     }
   }
 
-  // Sort token results: more token hits first, then by Fuse score (lower = better)
-  const tokenResults = [...tokenHits.values()]
-    .sort((a, b) => b.hitCount - a.hitCount || a.bestScore - b.bestScore)
-    .map(entry => entry.result)
+  // Sort by composite score; apply dynamic cutoff to eliminate noise
+  const sorted = [...voterScores.values()].sort((a, b) => b.score - a.score)
+  const topScore = sorted[0]?.score ?? 0
+  const minScore = topScore * 0.2
 
-  return [...fullResults, ...tokenResults]
+  return sorted
+    .filter(entry => entry.score >= minScore)
+    .map(entry => entry.result)
 }
 
 /**
