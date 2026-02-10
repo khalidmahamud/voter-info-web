@@ -66,10 +66,10 @@ export function WardStatsPage({ wardNo }: WardStatsPageProps) {
 
   // Success state
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
       <Header wardName={wardName ?? undefined} />
 
-      <main className="container mx-auto px-4 py-8 space-y-6">
+      <main className="container mx-auto px-4 py-8 space-y-6 flex-1">
         {/* Back Button and Title */}
         <div className="flex items-center gap-4">
           <Link href={`/ward/${wardNo}`}>

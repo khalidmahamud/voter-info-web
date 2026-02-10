@@ -61,10 +61,10 @@ export function WardSelection() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-8 space-y-8 flex-1">
         <div className="text-center space-y-2">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
             ওয়ার্ড নির্বাচন করুন
