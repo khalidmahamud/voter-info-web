@@ -43,11 +43,13 @@ export default function Home() {
       result = filterByOccupation(result, selectedOccupations)
     }
 
-    // Apply search if query is valid
+    // Apply search if query is valid — preserve Fuse.js relevance order
     if (searchQuery && searchQuery.trim().length >= 2 && searchIndex) {
       const searchResults = searchVoters(searchIndex, searchQuery)
-      const searchedIds = new Set(searchResults.map(r => r.item.voter_no))
-      result = result.filter(voter => searchedIds.has(voter.voter_no))
+      const filteredIds = new Set(result.map(v => v.voter_no))
+      result = searchResults
+        .filter(r => filteredIds.has(r.item.voter_no))
+        .map(r => r.item)
     }
 
     return result

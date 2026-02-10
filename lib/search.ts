@@ -8,11 +8,11 @@ import { normalizeVoterNumber } from './utils'
  */
 export const fuseOptions: IFuseOptions<VoterRecord> = {
   keys: [
-    { name: 'name', weight: 2 },           // Prioritize name matches
-    { name: 'voter_no', weight: 1.5 },     // Voter ID important
-    { name: 'father_name', weight: 1 },
-    { name: 'mother_name', weight: 1 },
-    { name: 'address', weight: 0.5 },      // Address less important
+    { name: 'name', weight: 5 },           // Highest priority: name matches first
+    { name: 'voter_no', weight: 1.5 },
+    { name: 'father_name', weight: 2 },    // Second priority: parent names
+    { name: 'mother_name', weight: 2 },
+    { name: 'address', weight: 0.5 },      // Third priority: address
     { name: 'occupation', weight: 0.3 },
   ],
   threshold: 0.3,                           // Fuzzy matching tolerance (0.0 = perfect match, 1.0 = match anything)
