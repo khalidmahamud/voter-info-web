@@ -42,7 +42,8 @@ export function createSearchIndex(records: VoterRecord[]): Fuse<VoterRecord> {
 /**
  * Perform a comprehensive multi-pass search on voter records.
  * Pass 1: Full query (highest relevance — exact/close matches)
- * Pass 2: Individual word tokens (catches partial/similar matches)
+ * Pass 2: Individual word tokens, ranked by how many tokens each voter matches.
+ *         e.g. "খুরশেদ আলম" (2 token hits) ranks above "মোঃ" only (1 token hit).
  * Results are deduplicated, with full-query matches always ranked first.
  */
 export function searchVoters(
@@ -57,26 +58,41 @@ export function searchVoters(
 
   // Pass 1: search with the full query
   const fullResults = fuse.search(normalizedQuery)
+  const fullResultIds = new Set<string>(fullResults.map(r => r.item.voter_no))
 
-  // Pass 2: split into tokens and search each individually
+  // Pass 2: split into tokens, search each, and score by token hit count
   const tokens = normalizedQuery
     .split(/\s+/)
     .filter(t => t.length >= 2)
 
-  const seen = new Set<string>(fullResults.map(r => r.item.voter_no))
-  const tokenResults: FuseResult<VoterRecord>[] = []
+  if (tokens.length <= 1) {
+    // Single token — full results already cover everything
+    return fullResults
+  }
+
+  // Track how many tokens each voter matched + best Fuse score
+  const tokenHits = new Map<string, { result: FuseResult<VoterRecord>; hitCount: number; bestScore: number }>()
 
   for (const token of tokens) {
     for (const r of fuse.search(token)) {
-      if (!seen.has(r.item.voter_no)) {
-        seen.add(r.item.voter_no)
-        tokenResults.push(r)
+      const id = r.item.voter_no
+      if (fullResultIds.has(id)) continue // already in pass 1 results
+
+      const existing = tokenHits.get(id)
+      if (existing) {
+        existing.hitCount++
+        existing.bestScore = Math.min(existing.bestScore, r.score ?? 1)
+      } else {
+        tokenHits.set(id, { result: r, hitCount: 1, bestScore: r.score ?? 1 })
       }
     }
   }
 
-  // Full-query matches first (already sorted by Fuse.js score),
-  // then token matches (also sorted by score within their group)
+  // Sort token results: more token hits first, then by Fuse score (lower = better)
+  const tokenResults = [...tokenHits.values()]
+    .sort((a, b) => b.hitCount - a.hitCount || a.bestScore - b.bestScore)
+    .map(entry => entry.result)
+
   return [...fullResults, ...tokenResults]
 }
 
