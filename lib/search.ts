@@ -15,14 +15,14 @@ export const fuseOptions: IFuseOptions<VoterRecord> = {
     { name: 'address', weight: 0.5 },      // Third priority: address
     { name: 'occupation', weight: 0.3 },
   ],
-  threshold: 0.3,                           // Fuzzy matching tolerance (0.0 = perfect match, 1.0 = match anything)
-  distance: 100,                            // Maximum distance for fuzzy matching
+  threshold: 0.4,                           // Slightly relaxed for broader matches
+  distance: 200,                            // Allow matching across longer strings
   ignoreLocation: true,                     // Search full strings, not just specific locations
   minMatchCharLength: 2,                    // Minimum 2 characters to trigger search
   useExtendedSearch: true,                  // Enable advanced search patterns
   includeScore: true,                       // Include relevance scores
   includeMatches: true,                     // Include match locations for highlighting
-  findAllMatches: false,                    // Return best match per item
+  findAllMatches: true,                     // Find all possible matches within an item
   shouldSort: true,                         // Sort results by relevance
 }
 
@@ -40,7 +40,10 @@ export function createSearchIndex(records: VoterRecord[]): Fuse<VoterRecord> {
 }
 
 /**
- * Perform search on voter records
+ * Perform a comprehensive multi-pass search on voter records.
+ * Pass 1: Full query (highest relevance — exact/close matches)
+ * Pass 2: Individual word tokens (catches partial/similar matches)
+ * Results are deduplicated, with full-query matches always ranked first.
  */
 export function searchVoters(
   fuse: Fuse<VoterRecord>,
@@ -50,11 +53,31 @@ export function searchVoters(
     return []
   }
 
-  // Normalize the query for voter numbers
   const normalizedQuery = normalizeVoterNumber(query.trim())
 
-  // Search
-  return fuse.search(normalizedQuery)
+  // Pass 1: search with the full query
+  const fullResults = fuse.search(normalizedQuery)
+
+  // Pass 2: split into tokens and search each individually
+  const tokens = normalizedQuery
+    .split(/\s+/)
+    .filter(t => t.length >= 2)
+
+  const seen = new Set<string>(fullResults.map(r => r.item.voter_no))
+  const tokenResults: FuseResult<VoterRecord>[] = []
+
+  for (const token of tokens) {
+    for (const r of fuse.search(token)) {
+      if (!seen.has(r.item.voter_no)) {
+        seen.add(r.item.voter_no)
+        tokenResults.push(r)
+      }
+    }
+  }
+
+  // Full-query matches first (already sorted by Fuse.js score),
+  // then token matches (also sorted by score within their group)
+  return [...fullResults, ...tokenResults]
 }
 
 /**
