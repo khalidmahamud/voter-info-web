@@ -23,7 +23,7 @@ export function Header({ wardName }: HeaderProps) {
             {wardName && (
               <p className="text-[9px] sm:text-[10px] md:text-sm text-blue-600 md:font-semibold leading-tight">{wardName}</p>
             )}
-            <p className="text-[9px] sm:text-[10px] md:text-sm text-gray-600 md:font-medium leading-tight">ধর্মপুর, সীতাকুন্ড</p>
+            <p className="text-[9px] sm:text-[10px] md:text-sm text-gray-600 md:font-medium leading-tight">সীতাকুন্ড</p>
             <p className="text-[8px] sm:text-[9px] md:text-xs text-gray-500 leading-tight">চট্টগ্রাম, বাংলাদেশ</p>
           </div>
         </div>

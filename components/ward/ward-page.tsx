@@ -186,6 +186,9 @@ export function WardPage({ wardNo }: WardPageProps) {
           <p className="text-center text-xs text-gray-500 mt-1">
             Built with Next.js, TypeScript, and Tailwind CSS
           </p>
+          <p className="text-center text-xs text-gray-500 mt-1">
+            Khalid Bin Mahamud Bhuiya
+          </p>
         </div>
       </footer>
     </div>

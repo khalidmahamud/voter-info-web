@@ -7,13 +7,13 @@
  * Individual voter record
  */
 export interface VoterRecord {
-  sl_no: string          // Serial number (mixed Bengali/Arabic numerals)
+  sl_no: string          // Serial number (Bengali numerals)
   name: string           // Full name in Bengali
-  voter_no: string       // 13-digit voter ID (mixed numerals)
+  voter_no: string       // 13-digit voter ID (Bengali numerals)
   father_name: string    // Father's name in Bengali
   mother_name: string    // Mother's name in Bengali
   occupation: string     // Occupation in Bengali
-  dob: string           // Date of birth DD/MM/YYYY (mixed numerals)
+  dob: string           // Date of birth DD/MM/YYYY (Bengali numerals)
   address: string       // Full address in Bengali
 }
 
